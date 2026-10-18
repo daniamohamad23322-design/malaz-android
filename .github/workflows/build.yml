@@ -13,9 +13,14 @@ jobs:
       KS_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - name: Unzip project
+        with:
+          fetch-depth: 0
+      - name: Unzip project (newest zip in the repo)
         working-directory: .
-        run: unzip -q malaz-capacitor-project.zip -d project
+        run: |
+          ZIP=$(git log --diff-filter=AM --name-only --format= -- 'malaz-capacitor-project*.zip' | grep -v '^$' | head -1)
+          echo "Using: $ZIP"
+          unzip -q "$ZIP" -d project
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -25,6 +30,8 @@ jobs:
           java-version: 21
       - run: npm install
       - run: npx cap add android
+      - name: Native additions (print plugin, share, notifications)
+        run: bash native/setup.sh
       - run: npx capacitor-assets generate --android || true
       - name: Force target/compile SDK 36 and set version code
         run: |
